@@ -104,9 +104,9 @@ function renderHeroStats() {
 
   heroStats.innerHTML = `
     <div>
-      <p class="panel__label">Пакет</p>
-      <h3>${escapeHtml(state.manifest.program)}</h3>
-      <p class="muted">${escapeHtml(state.manifest.description)}</p>
+      <p class="panel__label">Программа</p>
+      <h3>PSYVIT / YBT</h3>
+      <p class="muted">Короткие упражнения для личной устойчивости, ясности в работе и здорового взаимодействия в команде.</p>
     </div>
     <div class="stats-grid">
       <div class="stat">
@@ -130,7 +130,7 @@ function renderHeroStats() {
     </div>
     ${
       latestRun
-        ? `<p class="fineprint">Последний запуск: ${escapeHtml(latestRun.title)} • ${formatDateTime(latestRun.completedAt)}</p>`
+        ? `<p class="fineprint">Последний запуск: ${escapeHtml(getHistoryTitle(latestRun))} • ${formatDateTime(latestRun.completedAt)}</p>`
         : `<p class="fineprint">История пока пуста. Запустите первое упражнение.</p>`
     }
   `;
@@ -138,9 +138,16 @@ function renderHeroStats() {
   const actionRow = document.createElement("div");
   actionRow.className = "inline-actions";
 
+  const homeButton = document.createElement("button");
+  homeButton.className = "ghost";
+  homeButton.textContent = "В начало";
+  homeButton.disabled = state.view === "home" && !state.selectedModule;
+  homeButton.addEventListener("click", goHome);
+  actionRow.append(homeButton);
+
   const installButton = document.createElement("button");
   installButton.className = "secondary";
-  installButton.textContent = "Установить web-app";
+  installButton.textContent = "Установить приложение";
   installButton.disabled = !state.deferredInstallPrompt;
   installButton.addEventListener("click", installPwa);
   actionRow.append(installButton);
@@ -166,7 +173,6 @@ function renderLeftColumn() {
 function renderRightColumn() {
   const aside = document.createElement("aside");
   aside.className = "stack";
-  aside.append(renderOverviewPanel());
   aside.append(renderHistoryPanel());
   return aside;
 }
@@ -177,7 +183,7 @@ function renderHomePanel() {
   const description = document.createElement("p");
   description.className = "muted";
   description.textContent =
-    "Движок читает упражнения из manifest и JSON-сценариев. Изменения в контенте не требуют правок приложения.";
+    "Здесь собраны короткие практики по трём направлениям: личная устойчивость, работа и взаимодействие в команде.";
   panel.append(description);
 
   const moduleGrid = document.createElement("div");
@@ -197,13 +203,13 @@ function renderHomePanel() {
       <h3>${escapeHtml(getModuleHeadline(module.name))}</h3>
       <p class="muted">${scenarios.length} упражнений, в среднем ${avgMinutes} мин на одно.</p>
       <div class="meta-row">
-        <span class="chip">JSON-driven</span>
-        <span class="chip">${escapeHtml(module.exercise_ids.join(" • "))}</span>
+        <span class="chip">${escapeHtml(getModuleBadge(module.name))}</span>
       </div>
+      <p class="fineprint">${escapeHtml(scenarios.map((scenario) => getScenarioDisplayTitle(scenario)).join(" • "))}</p>
     `;
 
     const action = document.createElement("button");
-    action.textContent = "Открыть модуль";
+    action.textContent = "Смотреть упражнения";
     action.addEventListener("click", () => {
       state.selectedModule = module.name;
       render();
@@ -236,11 +242,8 @@ function renderExerciseList(moduleName) {
 
   const resetButton = document.createElement("button");
   resetButton.className = "ghost";
-  resetButton.textContent = "Сбросить выбор";
-  resetButton.addEventListener("click", () => {
-    state.selectedModule = null;
-    render();
-  });
+  resetButton.textContent = "В начало";
+  resetButton.addEventListener("click", goHome);
   header.append(resetButton);
 
   wrapper.append(header);
@@ -255,8 +258,8 @@ function renderExerciseList(moduleName) {
     card.className = "card";
 
     card.innerHTML = `
-      <p class="panel__label">${escapeHtml(scenario.exercise_id)}</p>
-      <h3>${escapeHtml(scenario.title)}</h3>
+      <p class="panel__label">Упражнение</p>
+      <h3>${escapeHtml(getScenarioDisplayTitle(scenario))}</h3>
       <p>${escapeHtml(scenario.description)}</p>
       <div class="meta-row">
         <span class="pill">${scenario.steps.length} шага</span>
@@ -274,16 +277,6 @@ function renderExerciseList(moduleName) {
     launch.addEventListener("click", () => startScenario(scenario.exercise_id));
     actionRow.append(launch);
 
-    const inspect = document.createElement("button");
-    inspect.className = "secondary";
-    inspect.textContent = "Показать оси";
-    inspect.addEventListener("click", () => {
-      alert(
-        `self: ${scenario.ybt_weights.self}, business: ${scenario.ybt_weights.business}, team: ${scenario.ybt_weights.team}`,
-      );
-    });
-    actionRow.append(inspect);
-
     card.append(actionRow);
     grid.append(card);
   }
@@ -299,7 +292,7 @@ function renderExercisePanel() {
   const progressValue = ((state.currentStepIndex + 1) / scenario.steps.length) * 100;
   const reveal = Boolean(selectedAnswer);
 
-  const panel = wrapPanel("Упражнение", scenario.title);
+  const panel = wrapPanel("Упражнение", getScenarioDisplayTitle(scenario));
 
   const summary = document.createElement("div");
   summary.className = "stack";
@@ -341,10 +334,10 @@ function renderExercisePanel() {
     button.innerHTML = `
       <strong>${escapeHtml(option.text)}</strong>
       <div class="meta-row">
-        <span class="chip">score ${option.score}</span>
-        <span class="chip">self ${formatSigned(option.ybt_delta.self)}</span>
-        <span class="chip">business ${formatSigned(option.ybt_delta.business)}</span>
-        <span class="chip">team ${formatSigned(option.ybt_delta.team)}</span>
+        <span class="chip">Баллы ${option.score}</span>
+        <span class="chip">Я ${formatSigned(option.ybt_delta.self)}</span>
+        <span class="chip">Бизнес ${formatSigned(option.ybt_delta.business)}</span>
+        <span class="chip">Команда ${formatSigned(option.ybt_delta.team)}</span>
       </div>
     `;
     button.addEventListener("click", () => answerCurrentStep(option.id));
@@ -360,7 +353,7 @@ function renderExercisePanel() {
     feedback.className = "stack";
     feedback.innerHTML = `
       <div class="consequence-box">
-        <p class="panel__label">Consequence</p>
+        <p class="panel__label">Что произойдёт</p>
         <p>${escapeHtml(chosenOption.consequence)}</p>
       </div>
       <div class="feedback-box">
@@ -384,6 +377,12 @@ function renderExercisePanel() {
     restart.addEventListener("click", () => startScenario(scenario.exercise_id));
     actions.append(restart);
 
+    const home = document.createElement("button");
+    home.className = "ghost";
+    home.textContent = "В начало";
+    home.addEventListener("click", goHome);
+    actions.append(home);
+
     panel.append(actions);
   }
 
@@ -393,7 +392,7 @@ function renderExercisePanel() {
 function renderResultPanel() {
   const scenario = state.currentScenario;
   const outcome = buildScenarioOutcome(scenario, state.answers);
-  const panel = wrapPanel("Результат", scenario.title);
+  const panel = wrapPanel("Результат", getScenarioDisplayTitle(scenario));
 
   const grid = document.createElement("div");
   grid.className = "result-grid";
@@ -422,7 +421,7 @@ function renderResultPanel() {
     </div>
     <div class="meta-row">
       <span class="pill ${outcome.passed ? "pill--pass" : "pill--fail"}">
-        ${outcome.passed ? "Pass" : "Retry"}
+        ${outcome.passed ? "Успешно" : "Нужен повтор"}
       </span>
       <span class="pill">Правильных шагов: ${outcome.correctCount}/${scenario.steps.length}</span>
     </div>
@@ -434,7 +433,7 @@ function renderResultPanel() {
   const axisCard = document.createElement("div");
   axisCard.className = "card";
   axisCard.innerHTML = `
-    <p class="panel__label">YBT профиль</p>
+    <p class="panel__label">Профиль</p>
     <h3>Накопленные дельты по осям</h3>
     <div class="axis-list">
       ${renderAxisRow("self", outcome.axis.self)}
@@ -446,7 +445,7 @@ function renderResultPanel() {
   const tips = document.createElement("div");
   tips.className = "card";
   tips.innerHTML = `
-    <p class="panel__label">Retry tips</p>
+    <p class="panel__label">Подсказки</p>
     <h3>На что смотреть при повторе</h3>
     <ul>
       ${scenario.retry_tips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join("")}
@@ -466,49 +465,21 @@ function renderResultPanel() {
 
   const homeButton = document.createElement("button");
   homeButton.className = "secondary";
-  homeButton.textContent = "К списку упражнений";
-  homeButton.addEventListener("click", () => {
-    state.view = "home";
-    state.selectedModule = scenario.module;
-    render();
-  });
+  homeButton.textContent = "В начало";
+  homeButton.addEventListener("click", goHome);
 
   const exportJsonButton = document.createElement("button");
   exportJsonButton.className = "ghost";
-  exportJsonButton.textContent = "Экспорт JSON";
+  exportJsonButton.textContent = "Скачать JSON";
   exportJsonButton.addEventListener("click", () => exportCurrentResult("json"));
 
   const exportCsvButton = document.createElement("button");
   exportCsvButton.className = "ghost";
-  exportCsvButton.textContent = "Экспорт CSV";
+  exportCsvButton.textContent = "Скачать CSV";
   exportCsvButton.addEventListener("click", () => exportCurrentResult("csv"));
 
   actions.append(retryButton, homeButton, exportJsonButton, exportCsvButton);
   panel.append(actions);
-  return panel;
-}
-
-function renderOverviewPanel() {
-  const panel = wrapPanel("Статус", "Что умеет текущая сборка");
-  panel.innerHTML += `
-    <div class="stack">
-      <div class="card">
-        <p class="panel__label">Движок</p>
-        <h3>Single choice + immediate feedback</h3>
-        <p>Каждый шаг показывает consequence и корректирующий разбор сразу после ответа.</p>
-      </div>
-      <div class="card">
-        <p class="panel__label">Данные</p>
-        <h3>Manifest-first загрузка</h3>
-        <p>Все 9 упражнений подхватываются из <code>/data/manifest.json</code>, тексты живут в отдельных JSON.</p>
-      </div>
-      <div class="card">
-        <p class="panel__label">Результаты</p>
-        <h3>localStorage + export</h3>
-        <p>История прохождений сохраняется локально и выгружается в <code>JSON</code> или <code>CSV</code>.</p>
-      </div>
-    </div>
-  `;
   return panel;
 }
 
@@ -520,13 +491,13 @@ function renderHistoryPanel() {
 
   const exportAllJson = document.createElement("button");
   exportAllJson.className = "ghost";
-  exportAllJson.textContent = "Вся история JSON";
+  exportAllJson.textContent = "История JSON";
   exportAllJson.disabled = state.history.length === 0;
   exportAllJson.addEventListener("click", () => downloadFile("psyvit-ybt-history.json", JSON.stringify(state.history, null, 2), "application/json"));
 
   const exportAllCsv = document.createElement("button");
   exportAllCsv.className = "ghost";
-  exportAllCsv.textContent = "Вся история CSV";
+  exportAllCsv.textContent = "История CSV";
   exportAllCsv.disabled = state.history.length === 0;
   exportAllCsv.addEventListener("click", () => {
     downloadFile("psyvit-ybt-history.csv", buildHistoryCsv(state.history), "text/csv;charset=utf-8");
@@ -550,8 +521,8 @@ function renderHistoryPanel() {
     const card = document.createElement("article");
     card.className = "history-item";
     card.innerHTML = `
-      <p class="panel__label">${escapeHtml(item.exerciseId)}</p>
-      <h3>${escapeHtml(item.title)}</h3>
+      <p class="panel__label">${escapeHtml(item.module)}</p>
+      <h3>${escapeHtml(getHistoryTitle(item))}</h3>
       <div class="meta-row">
         <span class="pill ${item.passed ? "pill--pass" : "pill--fail"}">${item.percent}%</span>
         <span class="pill">${item.totalScore}/${item.maxScore}</span>
@@ -580,6 +551,15 @@ function startScenario(exerciseId) {
   state.currentStepIndex = 0;
   state.answers = [];
   state.view = "exercise";
+  render();
+}
+
+function goHome() {
+  state.selectedModule = null;
+  state.currentScenario = null;
+  state.currentStepIndex = 0;
+  state.answers = [];
+  state.view = "home";
   render();
 }
 
@@ -616,7 +596,7 @@ function finalizeScenario() {
   const historyItem = {
     exerciseId: scenario.exercise_id,
     module: scenario.module,
-    title: scenario.title,
+    title: getScenarioDisplayTitle(scenario),
     completedAt: new Date().toISOString(),
     totalScore: outcome.totalScore,
     maxScore: outcome.maxScore,
@@ -737,7 +717,7 @@ function renderAxisRow(axis, value) {
   const percentage = Math.max(0, Math.min(100, 50 + value * 8));
   return `
     <div class="axis-row" data-axis="${axis}">
-      <strong>${axis}</strong>
+      <strong>${getAxisLabel(axis)}</strong>
       <div class="progress"><span style="width: ${percentage}%"></span></div>
       <span>${formatSigned(value)}</span>
     </div>
@@ -749,6 +729,42 @@ function getModuleHeadline(moduleName) {
   if (moduleName === "Бизнес") return "Приоритеты, цели и рабочая ясность";
   if (moduleName === "Команда") return "Доверие, ответственность и взаимодействие";
   return moduleName;
+}
+
+function getModuleBadge(moduleName) {
+  if (moduleName === "Я") return "Ресурс и саморегуляция";
+  if (moduleName === "Бизнес") return "Фокус и решения";
+  if (moduleName === "Команда") return "Доверие и договорённости";
+  return moduleName;
+}
+
+function getScenarioDisplayTitle(scenario) {
+  const titles = {
+    ya_self_care_map_01: "Карта заботы о себе",
+    ya_resentment_audit_02: "Аудит раздражения",
+    ya_checkin_checkout_03: "Вход и выход из рабочего дня",
+    biz_energy_budget_01: "Энергетический бюджет",
+    biz_stop_doing_02: "Список лишнего",
+    biz_smarts_03: "Цель без выгорания",
+    team_canvas_01: "Карта взаимодействия команды",
+    team_circle_resp_02: "Круг ответственности",
+    team_psych_safety_03: "Психологическая безопасность в команде",
+  };
+
+  return titles[scenario.exercise_id] ?? scenario.title;
+}
+
+function getAxisLabel(axis) {
+  if (axis === "self") return "Я";
+  if (axis === "business") return "Бизнес";
+  if (axis === "team") return "Команда";
+  return axis;
+}
+
+function getHistoryTitle(item) {
+  const scenario = state.scenarios.get(item.exerciseId);
+  if (scenario) return getScenarioDisplayTitle(scenario);
+  return item.title || item.exerciseId;
 }
 
 function formatSigned(value) {
