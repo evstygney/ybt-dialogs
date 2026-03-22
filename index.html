@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PSYVIT YBT Gamification</title>
+    <meta name="theme-color" content="#b44c2f" />
+    <meta name="description" content="PSYVIT / YBT scripted exercises trainer" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero__copy">
+          <p class="eyebrow">PSYVIT / YBT</p>
+          <h1>Тренажёр scripted-упражнений по контурам «Я, Бизнес, Команда»</h1>
+          <p class="hero__lead">
+            JSON-driven приложение: сценарии редактируются в
+            <code>/data/scenarios</code>, движок автоматически подхватывает структуру из
+            <code>manifest.json</code>.
+          </p>
+        </div>
+        <div class="hero__stats" id="hero-stats"></div>
+      </header>
+
+      <main id="app" class="app-grid" aria-live="polite"></main>
+    </div>
+
+    <template id="loading-template">
+      <section class="panel panel--wide">
+        <p class="panel__label">Загрузка</p>
+        <h2>Читаю manifest и сценарии</h2>
+      </section>
+    </template>
+
+    <template id="error-template">
+      <section class="panel panel--wide">
+        <p class="panel__label">Ошибка загрузки</p>
+        <h2>Не удалось открыть данные сценариев</h2>
+        <p id="error-text"></p>
+        <p class="muted">
+          Запускайте приложение через локальный сервер, например:
+          <code>python -m http.server 4173</code>
+        </p>
+      </section>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

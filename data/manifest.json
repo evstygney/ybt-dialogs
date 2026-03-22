@@ -1,0 +1,46 @@
+{
+  "program": "PSYVIT YBT Gamification",
+  "version": "1.0",
+  "description": "Набор заскриптованных упражнений по контурам Я — Бизнес — Команда.",
+  "modules": [
+    {
+      "name": "Я",
+      "exercise_ids": [
+        "ya_self_care_map_01",
+        "ya_resentment_audit_02",
+        "ya_checkin_checkout_03"
+      ]
+    },
+    {
+      "name": "Бизнес",
+      "exercise_ids": [
+        "biz_energy_budget_01",
+        "biz_stop_doing_02",
+        "biz_smarts_03"
+      ]
+    },
+    {
+      "name": "Команда",
+      "exercise_ids": [
+        "team_canvas_01",
+        "team_circle_resp_02",
+        "team_psych_safety_03"
+      ]
+    }
+  ],
+  "scoring": {
+    "max_score_per_step": 10,
+    "pass_threshold_default": 70,
+    "ybt_dimensions": [
+      "self",
+      "business",
+      "team"
+    ]
+  },
+  "ui_rules": {
+    "single_choice_only": true,
+    "show_consequence_immediately": true,
+    "show_feedback_after_answer": true,
+    "allow_retry": true
+  }
+}
